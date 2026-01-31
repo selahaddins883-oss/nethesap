@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YKS Pro Takipçisi v2.2 (Detaylı Grafik)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --tyt-color: #3B82F6; /* Mavi */
+            --ayt-color: #EF4444; /* Kırmızı */
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-dark: #1E293B;
+            --text-gray: #64748B;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-dark); padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* --- Header & Countdown --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header-left h1 { font-size: 1.8rem; font-weight: 700; color: #0F172A; }
+        .header-left p { color: var(--text-gray); font-size: 0.9rem; }
+
+        .countdown-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: var(--radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            min-width: 200px;
+        }
+        .countdown-time { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .countdown-label { font-size: 0.75rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; color: #fbbf24; }
+
+        /* --- Targets Section --- */
+        .targets-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .target-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 6px solid transparent;
+        }
+
+        .target-card.tyt { border-left-color: var(--tyt-color); }
+        .target-card.ayt { border-left-color: var(--ayt-color); }
+
+        .target-info h3 { font-size: 1rem; color: var(--text-gray); margin-bottom: 5px; }
+        .target-info .current { font-size: 1.8rem; font-weight: 700; }
+        .target-input-group { text-align: right; }
+        .target-input-group input {
+            width: 70px;
+            padding: 5px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .target-diff { font-size: 0.85rem; font-weight: 500; margin-top: 5px; }
+        .badge-green { color: #10B981; background: #D1FAE5; padding: 2px 6px; border-radius: 4px; }
+        .badge-red { color: #EF4444; background: #FEE2E2; padding: 2px 6px; border-radius: 4px; }
+
+        /* --- Main Layout --- */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 25px;
+        }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+        /* --- Form --- */
+        .form-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .section-header {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #F1F5F9;
+            display: flex;
+            justify-content: space-between;
+        }
+        .section-header span.preview { font-size: 0.9rem; color: var(--text-gray); font-weight: 400; }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .input-row label { font-size: 0.85rem; font-weight: 500; color: #475569; }
+        .input-row input {
+            padding: 8px;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .input-row input:focus { outline: none; border-color: var(--tyt-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+        
+        .btn-save {
+            width: 100%;
+            padding: 14px;
+            background: #0F172A;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.1s;
+        }
+        .btn-save:active { transform: scale(0.98); }
+
+        /* --- Charts & History --- */
+        .content-area { display: flex; flex-direction: column; gap: 25px; }
+        
+        .chart-wrapper {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            height: 450px; /* Grafik alanı biraz büyütüldü */
+            position: relative;
+        }
+
+        .table-wrapper {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 12px; color: var(--text-gray); font-weight: 500; border-bottom: 1px solid #E2E8F0; }
+        td { padding: 12px; border-bottom: 1px solid #F1F5F9; color: var(--text-dark); }
+        .btn-del {
+            background: none; border: 1px solid #EF4444; color: #EF4444;
+            padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .btn-del:hover { background: #EF4444; color: white; }
+
+        /* --- Settings --- */
+        .settings-area { margin-top: 30px; text-align: center; padding: 20px; border-top: 2px dashed #E2E8F0; }
+        .btn-reset {
+            background: none; border: none; color: #94A3B8;
+            text-decoration: underline; cursor: pointer; font-size: 0.85rem; margin-top: 10px; display: inline-block;
+        }
+        .btn-reset:hover { color: #EF4444; }
+
+        .date-settings {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .date-input {
+            padding: 8px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            color: #475569;
+        }
+        .btn-date-save {
+            background: #3B82F6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+        }
+        .btn-date-save:hover { background: #2563EB; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-left">
+            <h1>🚀 YKS Gelişim Takipçisi</h1>
+            <p>Sınav yaklaşıyor, netleri kontrol altında tut.</p>
+        </div>
+        <div class="countdown-card">
+            <div class="countdown-time" id="countdown">Hesaplanıyor...</div>
+            <div class="countdown-label">BÜYÜK GÜNE KALAN</div>
+        </div>
+    </header>
+
+    <div class="targets-container">
+        <div class="target-card tyt">
+            <div class="target-info">
+                <h3>TYT Güncel Net</h3>
+                <div class="current" id="lblCurrentTYT">0.00</div>
+                <div class="target-diff" id="lblDiffTYT">Veri yok</div>
+            </div>
+            <div class="target-input-group">
+                <label style="font-size: 0.8rem; display:block; margin-bottom:5px;">TYT Hedef</label>
+                <input type="number" id="targetTYT" value="80" onchange="updateTargets()">
+            </div>
+        </div>
+
+        <div class="target-card ayt">
+            <div class="target-info">
+                <h3>AYT Güncel Net</h3>
+                <div class="current" id="lblCurrentAYT">0.00</div>
+                <div class="target-diff" id="lblDiffAYT">Veri yok</div>
+            </div>
+            <div class="target-input-group">
+                <label style="font-size: 0.8rem; display:block; margin-bottom:5px;">AYT Hedef</label>
+                <input type="number" id="targetAYT" value="50" onchange="updateTargets()">
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="form-card">
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 600; font-size: 0.9rem;">Deneme Tarihi:</label>
+                <input type="date" id="entryDate" style="width:100%; padding:10px; margin-top:5px; border:1px solid #E2E8F0; border-radius:8px;">
+            </div>
+
+            <div class="section-header" style="color: var(--tyt-color);">
+                TYT <span class="preview" id="previewTYT">0.00 Net</span>
+            </div>
+            <div class="input-row">
+                <label>Türkçe (40)</label>
+                <input type="number" class="calc-input" id="tTurkceD" placeholder="D">
+                <input type="number" class="calc-input" id="tTurkceY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>Sosyal (20)</label>
+                <input type="number" class="calc-input" id="tSosyalD" placeholder="D">
+                <input type="number" class="calc-input" id="tSosyalY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>Matematik (40)</label>
+                <input type="number" class="calc-input" id="tMatD" placeholder="D">
+                <input type="number" class="calc-input" id="tMatY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>Fen (20)</label>
+                <input type="number" class="calc-input" id="tFenD" placeholder="D">
+                <input type="number" class="calc-input" id="tFenY" placeholder="Y">
+            </div>
+
+            <div class="section-header" style="color: var(--ayt-color); margin-top: 20px;">
+                AYT <span class="preview" id="previewAYT">0.00 Net</span>
+            </div>
+            <div class="input-row">
+                <label>Matematik (40)</label>
+                <input type="number" class="calc-input" id="aMatD" placeholder="D">
+                <input type="number" class="calc-input" id="aMatY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>Fen Bilimleri (40)</label>
+                <input type="number" class="calc-input" id="aFenD" placeholder="D">
+                <input type="number" class="calc-input" id="aFenY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>TDE-Sos1 (40)</label>
+                <input type="number" class="calc-input" id="aTdeD" placeholder="D">
+                <input type="number" class="calc-input" id="aTdeY" placeholder="Y">
+            </div>
+            <div class="input-row">
+                <label>Sosyal-2 (40)</label>
+                <input type="number" class="calc-input" id="aSos2D" placeholder="D">
+                <input type="number" class="calc-input" id="aSos2Y" placeholder="Y">
+            </div>
+
+            <button class="btn-save" onclick="saveData()">Denemeyi Kaydet</button>
+        </div>
+
+        <div class="content-area">
+            <div class="chart-wrapper">
+                <canvas id="progressChart"></canvas>
+            </div>
+            <div style="text-align:center; font-size:0.8rem; color:#64748B; margin-top:-10px;">
+                💡 Grafikteki kutucuklara tıklayarak ders detaylarını açıp kapatabilirsin.
+            </div>
+
+            <div class="table-wrapper">
+                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Geçmiş Denemeler</h3>
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th style="color:var(--tyt-color)">TYT Net</th>
+                            <th style="color:var(--ayt-color)">AYT Net</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-area">
+        <div class="date-settings">
+            <label style="font-weight: 500;">📅 Sınav Tarihi:</label>
+            <input type="datetime-local" id="examDateInput" class="date-input">
+            <button class="btn-date-save" onclick="updateExamDate()">Tarihi Güncelle</button>
+        </div>
+        <button class="btn-reset" onclick="resetAllData()">⚠️ Tüm Verileri Sıfırla (Local Storage Temizle)</button>
+    </div>
+</div>
+
+<script>
+    // --- Global Değişkenler ---
+    let myChart = null;
+    let countdownInterval = null;
+    document.getElementById('entryDate').valueAsDate = new Date();
+
+    // --- Sayfa Yüklenirken ---
+    window.onload = function() {
+        loadSettings();
+        updateUI();
+        startCountdown();
+        setupLiveCalc();
+    };
+
+    // --- Sayaç (Countdown) ---
+    function startCountdown() {
+        const defaultDate = "2026-06-20T12:15";
+        const storedDate = localStorage.getItem('yksExamDate') || defaultDate;
+        
+        document.getElementById('examDateInput').value = storedDate;
+        const examDate = new Date(storedDate).getTime();
+        
+        if (countdownInterval) clearInterval(countdownInterval);
+
+        countdownInterval = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = examDate - now;
+
+            if (distance < 0) {
+                document.getElementById("countdown").innerHTML = "SINAV VAKTİ!";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+            document.getElementById("countdown").innerHTML = `${days} Gün ${hours} Sa ${minutes} Dk`;
+        }, 1000);
+    }
+
+    function updateExamDate() {
+        const newDate = document.getElementById('examDateInput').value;
+        if (!newDate) { alert("Lütfen geçerli bir tarih seçin!"); return; }
+        localStorage.setItem('yksExamDate', newDate);
+        startCountdown();
+        alert("Sınav tarihi güncellendi!");
+    }
+
+    // --- Anlık Hesaplama ---
+    function setupLiveCalc() {
+        const inputs = document.querySelectorAll('.calc-input');
+        inputs.forEach(input => {
+            input.addEventListener('input', calculatePreviews);
+        });
+    }
+
+    function calculatePreviews() {
+        // Önizleme için kabaca hesapla
+        const tyt = net(getVal('tTurkceD'), getVal('tTurkceY')) +
+                    net(getVal('tSosyalD'), getVal('tSosyalY')) +
+                    net(getVal('tMatD'), getVal('tMatY')) +
+                    net(getVal('tFenD'), getVal('tFenY'));
+
+        const ayt = net(getVal('aMatD'), getVal('aMatY')) +
+                    net(getVal('aFenD'), getVal('aFenY')) +
+                    net(getVal('aTdeD'), getVal('aTdeY')) +
+                    net(getVal('aSos2D'), getVal('aSos2Y'));
+        
+        const tytElem = document.getElementById('previewTYT');
+        tytElem.innerText = `${tyt.toFixed(2)} Net`;
+        if(tyt > 120) { tytElem.style.color = 'red'; tytElem.innerText += " (HATA!)"; }
+        else { tytElem.style.color = 'var(--text-gray)'; }
+
+        const aytElem = document.getElementById('previewAYT');
+        aytElem.innerText = `${ayt.toFixed(2)} Net`;
+        if(ayt > 120) { aytElem.style.color = 'red'; aytElem.innerText += " (HATA!)"; }
+        else { aytElem.style.color = 'var(--text-gray)'; }
+    }
+
+    function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+    function net(d, y) { return d - (y / 4); }
+
+    // --- Veri Kaydetme ---
+    function saveData() {
+        const date = document.getElementById('entryDate').value;
+
+        // TYT Detayları
+        const tTurkce = net(getVal('tTurkceD'), getVal('tTurkceY'));
+        const tSosyal = net(getVal('tSosyalD'), getVal('tSosyalY'));
+        const tMat = net(getVal('tMatD'), getVal('tMatY'));
+        const tFen = net(getVal('tFenD'), getVal('tFenY'));
+        const tytNet = parseFloat((tTurkce + tSosyal + tMat + tFen).toFixed(2));
+
+        // AYT Detayları
+        const aMat = net(getVal('aMatD'), getVal('aMatY'));
+        const aFen = net(getVal('aFenD'), getVal('aFenY'));
+        const aTde = net(getVal('aTdeD'), getVal('aTdeY'));
+        const aSos2 = net(getVal('aSos2D'), getVal('aSos2Y'));
+        const aytNet = parseFloat((aMat + aFen + aTde + aSos2).toFixed(2));
+
+        if (tytNet > 120 || aytNet > 120) {
+            alert("❌ HATA: Netler 120'den büyük olamaz!");
+            return;
+        }
+        if (tytNet === 0 && aytNet === 0) {
+            alert("⚠️ Lütfen en az bir ders için net girişi yap.");
+            return;
+        }
+
+        const newEntry = {
+            id: Date.now(),
+            date: date,
+            tyt: tytNet,
+            ayt: aytNet,
+            // Detayları da kaydediyoruz
+            d_tTurkce: parseFloat(tTurkce.toFixed(2)),
+            d_tSosyal: parseFloat(tSosyal.toFixed(2)),
+            d_tMat: parseFloat(tMat.toFixed(2)),
+            d_tFen: parseFloat(tFen.toFixed(2)),
+            d_aMat: parseFloat(aMat.toFixed(2)),
+            d_aFen: parseFloat(aFen.toFixed(2)),
+            d_aTde: parseFloat(aTde.toFixed(2)),
+            d_aSos2: parseFloat(aSos2.toFixed(2))
+        };
+
+        let data = JSON.parse(localStorage.getItem('yksDataPro')) || [];
+        data.push(newEntry);
+        data.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        localStorage.setItem('yksDataPro', JSON.stringify(data));
+        
+        document.querySelectorAll('.calc-input').forEach(i => i.value = '');
+        calculatePreviews();
+        updateUI();
+    }
+
+    // --- UI Güncelleme ---
+    function updateUI() {
+        const data = JSON.parse(localStorage.getItem('yksDataPro')) || [];
+        const targetTYT = parseFloat(localStorage.getItem('targetTYT')) || 80;
+        const targetAYT = parseFloat(localStorage.getItem('targetAYT')) || 50;
+
+        // Tablo
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+        [...data].reverse().forEach(entry => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${new Date(entry.date).toLocaleDateString('tr-TR')}</td>
+                    <td style="font-weight:600;">${entry.tyt}</td>
+                    <td style="font-weight:600;">${entry.ayt}</td>
+                    <td><button class="btn-del" onclick="deleteEntry(${entry.id})">Sil</button></td>
+                </tr>
+            `;
+        });
+
+        // Kartlar
+        if (data.length > 0) {
+            const last = data[data.length - 1];
+            
+            document.getElementById('lblCurrentTYT').innerText = last.tyt;
+            const diffTYT = last.tyt - targetTYT;
+            document.getElementById('lblDiffTYT').innerHTML = diffTYT >= 0 
+                ? `<span class="badge-green">Hedef Tamam (+${diffTYT.toFixed(2)})</span>`
+                : `<span class="badge-red">Hedefe ${Math.abs(diffTYT).toFixed(2)} Kaldı</span>`;
+
+            document.getElementById('lblCurrentAYT').innerText = last.ayt;
+            const diffAYT = last.ayt - targetAYT;
+            document.getElementById('lblDiffAYT').innerHTML = diffAYT >= 0 
+                ? `<span class="badge-green">Hedef Tamam (+${diffAYT.toFixed(2)})</span>`
+                : `<span class="badge-red">Hedefe ${Math.abs(diffAYT).toFixed(2)} Kaldı</span>`;
+        }
+
+        renderChart(data);
+    }
+
+    // --- GELİŞMİŞ GRAFİK ---
+    function renderChart(data) {
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        const labels = data.map(d => new Date(d.date).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}));
+
+        // Veri Setleri
+        // Varsayılan olarak detayları (hidden: true) yapıyoruz ki grafik karışmasın.
+        const datasets = [
+            // ANA HATTAR (GÖRÜNÜR)
+            { label: 'TYT Toplam', data: data.map(d => d.tyt), borderColor: '#3B82F6', backgroundColor: '#3B82F6', borderWidth: 4, tension: 0.3, fill: false },
+            { label: 'AYT Toplam', data: data.map(d => d.ayt), borderColor: '#EF4444', backgroundColor: '#EF4444', borderWidth: 4, tension: 0.3, fill: false },
+            
+            // TYT DETAYLARI (GİZLİ - TIKLAYINCA AÇILIR)
+            { label: 'TYT Türkçe', data: data.map(d => d.d_tTurkce || 0), borderColor: '#F59E0B', backgroundColor: '#F59E0B', borderWidth: 2, hidden: true, borderDash: [5,5] },
+            { label: 'TYT Sosyal', data: data.map(d => d.d_tSosyal || 0), borderColor: '#F97316', backgroundColor: '#F97316', borderWidth: 2, hidden: true, borderDash: [5,5] },
+            { label: 'TYT Mat',    data: data.map(d => d.d_tMat || 0),    borderColor: '#10B981', backgroundColor: '#10B981', borderWidth: 2, hidden: true, borderDash: [5,5] },
+            { label: 'TYT Fen',    data: data.map(d => d.d_tFen || 0),    borderColor: '#8B5CF6', backgroundColor: '#8B5CF6', borderWidth: 2, hidden: true, borderDash: [5,5] },
+
+            // AYT DETAYLARI (GİZLİ - TIKLAYINCA AÇILIR)
+            { label: 'AYT Mat',    data: data.map(d => d.d_aMat || 0),    borderColor: '#047857', backgroundColor: '#047857', borderWidth: 2, hidden: true, borderDash: [2,2] },
+            { label: 'AYT Fen',    data: data.map(d => d.d_aFen || 0),    borderColor: '#EC4899', backgroundColor: '#EC4899', borderWidth: 2, hidden: true, borderDash: [2,2] },
+            { label: 'AYT Edeb.',  data: data.map(d => d.d_aTde || 0),    borderColor: '#B45309', backgroundColor: '#B45309', borderWidth: 2, hidden: true, borderDash: [2,2] },
+            { label: 'AYT Sos-2',  data: data.map(d => d.d_aSos2 || 0),   borderColor: '#6366F1', backgroundColor: '#6366F1', borderWidth: 2, hidden: true, borderDash: [2,2] }
+        ];
+
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'top',
+                        labels: { usePointStyle: true, boxWidth: 8, font: {size: 11} }
+                    },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 130, grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function updateTargets() {
+        localStorage.setItem('targetTYT', document.getElementById('targetTYT').value);
+        localStorage.setItem('targetAYT', document.getElementById('targetAYT').value);
+        updateUI();
+    }
+
+    function loadSettings() {
+        if(localStorage.getItem('targetTYT')) document.getElementById('targetTYT').value = localStorage.getItem('targetTYT');
+        if(localStorage.getItem('targetAYT')) document.getElementById('targetAYT').value = localStorage.getItem('targetAYT');
+    }
+
+    function deleteEntry(id) {
+        if(confirm("Bu deneme kaydını silmek istiyor musun?")) {
+            let data = JSON.parse(localStorage.getItem('yksDataPro')) || [];
+            data = data.filter(d => d.id !== id);
+            localStorage.setItem('yksDataPro', JSON.stringify(data));
+            updateUI();
+        }
+    }
+
+    function resetAllData() {
+        if(confirm("TÜM VERİLERİN SİLİNECEK! Emin misin?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
